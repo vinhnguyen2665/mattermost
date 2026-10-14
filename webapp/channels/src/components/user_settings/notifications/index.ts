@@ -6,10 +6,13 @@ import {connect, type ConnectedProps} from 'react-redux';
 import type {PreferencesType} from '@mattermost/types/preferences';
 import type {UserProfile} from '@mattermost/types/users';
 
+import {savePreferences} from 'mattermost-redux/actions/preferences';
 import {patchUser, updateMe} from 'mattermost-redux/actions/users';
+import {Preferences} from 'mattermost-redux/constants';
 import {getSubscriptionProduct} from 'mattermost-redux/selectors/entities/cloud';
 import {getConfig, getLicense} from 'mattermost-redux/selectors/entities/general';
 import {
+    getBool,
     isCollapsedThreadsEnabled,
     isCollapsedThreadsEnabledForUser,
 } from 'mattermost-redux/selectors/entities/preferences';
@@ -44,6 +47,10 @@ const mapStateToProps = (state: GlobalState, props: OwnProps) => {
 
     const isEnterpriseReady = config.BuildEnterpriseReady === 'true';
 
+    const hideMessagePreview = props.adminMode && props.userPreferences ?
+        getBool(state, Preferences.CATEGORY_NOTIFICATIONS, 'hide_message_preview', true, props.userPreferences) :
+        getBool(state, Preferences.CATEGORY_NOTIFICATIONS, 'hide_message_preview', true);
+
     return {
         sendPushNotifications,
         enableAutoResponder,
@@ -51,12 +58,14 @@ const mapStateToProps = (state: GlobalState, props: OwnProps) => {
         isCallsRingingEnabled: isCallsEnabled(state, '0.17.0') && isCallsRingingEnabledOnServer(state),
         isEnterpriseOrCloudOrSKUStarterFree: isEnterpriseOrCloudOrSKUStarterFree(license, subscriptionProduct, isEnterpriseReady),
         isEnterpriseReady,
+        hideMessagePreview,
     };
 };
 
 const mapDispatchToProps = {
     updateMe,
     patchUser,
+    savePreferences,
 };
 
 const connector = connect(mapStateToProps, mapDispatchToProps);

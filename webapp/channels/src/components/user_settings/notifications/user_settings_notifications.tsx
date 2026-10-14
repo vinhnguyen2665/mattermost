@@ -4,24 +4,27 @@
 /* eslint-disable max-lines */
 
 import React from 'react';
-import type {ChangeEvent, JSX} from 'react';
-import type {WrappedComponentProps} from 'react-intl';
-import {FormattedMessage, injectIntl} from 'react-intl';
-import type {InputProps, OnChangeValue, StylesConfig} from 'react-select';
-import {components} from 'react-select';
+import type { ChangeEvent, JSX } from 'react';
+import type { WrappedComponentProps } from 'react-intl';
+import { FormattedMessage, injectIntl } from 'react-intl';
+import type { InputProps, OnChangeValue, StylesConfig } from 'react-select';
+import { components } from 'react-select';
 import CreatableReactSelect from 'react-select/creatable';
 
-import {LightbulbOutlineIcon} from '@mattermost/compass-icons/components';
-import type {UserNotifyProps, UserProfile} from '@mattermost/types/users';
+import { LightbulbOutlineIcon } from '@mattermost/compass-icons/components';
+import type { PreferenceType } from '@mattermost/types/preferences';
+import type { UserNotifyProps, UserProfile } from '@mattermost/types/users';
+
+import { Preferences } from 'mattermost-redux/constants';
 
 import ExternalLink from 'components/external_link';
 import SettingItem from 'components/setting_item';
 import SettingItemMax from 'components/setting_item_max';
 import RestrictedIndicator from 'components/widgets/menu/menu_items/restricted_indicator';
 
-import Constants, {NotificationLevels, MattermostFeatures, LicenseSkus, UserSettingsNotificationSections} from 'utils/constants';
-import {notificationSoundKeys, stopTryNotificationRing} from 'utils/notification_sounds';
-import {a11yFocus} from 'utils/utils';
+import Constants, { NotificationLevels, MattermostFeatures, LicenseSkus, UserSettingsNotificationSections } from 'utils/constants';
+import { notificationSoundKeys, stopTryNotificationRing } from 'utils/notification_sounds';
+import { a11yFocus } from 'utils/utils';
 
 import DesktopAndMobileNotificationSettings from './desktop_and_mobile_notification_setting';
 import DesktopNotificationSoundsSettings from './desktop_notification_sounds_setting';
@@ -32,7 +35,7 @@ import SendTestNotificationNotice from './send_test_notification_notice';
 import SettingDesktopHeader from '../headers/setting_desktop_header';
 import SettingMobileHeader from '../headers/setting_mobile_header';
 
-import type {OwnProps, PropsFromRedux} from './index';
+import type { OwnProps, PropsFromRedux } from './index';
 
 const WHITE_SPACE_REGEX = /\s+/g;
 const COMMA_REGEX = /,/g;
@@ -71,6 +74,7 @@ type State = {
     isSaving: boolean;
     serverError: string;
     desktopAndMobileSettingsDifferent: boolean;
+    hideMessagePreview: boolean;
 };
 
 function getDefaultStateFromProps(props: Props): State {
@@ -214,6 +218,7 @@ function getDefaultStateFromProps(props: Props): State {
         isSaving: false,
         serverError: '',
         desktopAndMobileSettingsDifferent,
+        hideMessagePreview: typeof (props as any).hideMessagePreview !== 'undefined' ? (props as any).hideMessagePreview : true,
     };
 }
 
@@ -240,8 +245,109 @@ class NotificationsTab extends React.PureComponent<Props, State> {
         this.state = getDefaultStateFromProps(props);
     }
 
+    componentDidUpdate(prevProps: Props) {
+        if (prevProps.hideMessagePreview !== this.props.hideMessagePreview && typeof this.props.hideMessagePreview !== 'undefined') {
+            this.setState({ hideMessagePreview: this.props.hideMessagePreview });
+        }
+    }
+
+    handleChangeForHideMessagePreviewRadio = (value: boolean) => {
+        this.setState({ hideMessagePreview: value });
+    };
+
+    createHideMessagePreviewSection = () => {
+        const serverError = this.state.serverError;
+        const isSectionExpanded = this.props.activeSection === UserSettingsNotificationSections.HIDE_MESSAGE_PREVIEW;
+
+        let max = null;
+        if (isSectionExpanded) {
+            max = (
+                <SettingItemMax
+                    title={this.props.intl.formatMessage({ id: 'user.settings.notifications.hideMessagePreview.title', defaultMessage: 'Hide preview message' })}
+                    inputs={
+                        <fieldset>
+                            <legend className='form-legend hidden-label'>
+                                <FormattedMessage
+                                    id='user.settings.notifications.hideMessagePreview.title'
+                                    defaultMessage='Hide preview message'
+                                />
+                            </legend>
+                            <div className='radio'>
+                                <label>
+                                    <input
+                                        id='hideMessagePreviewOn'
+                                        type='radio'
+                                        name='hideMessagePreview'
+                                        checked={this.state.hideMessagePreview}
+                                        onChange={() => this.handleChangeForHideMessagePreviewRadio(true)}
+                                    />
+                                    <FormattedMessage
+                                        id='user.settings.notifications.hideMessagePreview.on'
+                                        defaultMessage='On'
+                                    />
+                                </label>
+                                <br />
+                            </div>
+                            <div className='radio'>
+                                <label>
+                                    <input
+                                        id='hideMessagePreviewOff'
+                                        type='radio'
+                                        name='hideMessagePreview'
+                                        checked={!this.state.hideMessagePreview}
+                                        onChange={() => this.handleChangeForHideMessagePreviewRadio(false)}
+                                    />
+                                    <FormattedMessage
+                                        id='user.settings.notifications.hideMessagePreview.off'
+                                        defaultMessage='Off'
+                                    />
+                                </label>
+                            </div>
+                        </fieldset>
+                    }
+                    extraInfo={
+                        <span>
+                            <FormattedMessage
+                                id='user.settings.notifications.hideMessagePreview.description'
+                                defaultMessage='When enabled, notifications on your computer will only display the sender or channel, not the message details.'
+                            />
+                        </span>
+                    }
+                    submit={this.handleSubmit}
+                    saving={this.state.isSaving}
+                    serverError={serverError}
+                    updateSection={this.handleUpdateSection}
+                />
+            );
+        }
+
+        const describe = this.state.hideMessagePreview ? (
+            <FormattedMessage
+                id='user.settings.notifications.hideMessagePreview.on'
+                defaultMessage='On'
+            />
+        ) : (
+            <FormattedMessage
+                id='user.settings.notifications.hideMessagePreview.off'
+                defaultMessage='Off'
+            />
+        );
+
+        return (
+            <SettingItem
+                title={this.props.intl.formatMessage({ id: 'user.settings.notifications.hideMessagePreview.title', defaultMessage: 'Hide preview message' })}
+                active={isSectionExpanded}
+                describe={describe}
+                section={UserSettingsNotificationSections.HIDE_MESSAGE_PREVIEW}
+                updateSection={this.handleUpdateSection}
+                max={max}
+                areAllSectionsInactive={this.props.activeSection === ''}
+            />
+        );
+    };
+
     handleSubmit = async () => {
-        const data: UserNotifyProps = {...this.props.user.notify_props};
+        const data: UserNotifyProps = { ...this.props.user.notify_props };
         data.email = this.state.enableEmail;
         data.desktop_sound = this.state.desktopSound;
         data.calls_desktop_sound = this.state.callsDesktopSound;
@@ -292,30 +398,43 @@ class NotificationsTab extends React.PureComponent<Props, State> {
         }
         data.highlight_keys = highlightKeys.join(',');
 
-        this.setState({isSaving: true});
+        this.setState({ isSaving: true });
         stopTryNotificationRing();
 
         let updatedUser: UserProfile | undefined;
         let error;
 
+        if (this.props.savePreferences) {
+            const preference: PreferenceType = {
+                user_id: this.props.user.id,
+                category: Preferences.CATEGORY_NOTIFICATIONS,
+                name: 'hide_message_preview',
+                value: this.state.hideMessagePreview ? 'true' : 'false',
+            };
+            await this.props.savePreferences(this.props.user.id, [preference]);
+        }
+
         if (this.props.adminMode) {
-            const payloadUser = {...this.props.user, notify_props: data};
+            const payloadUser = { ...this.props.user, notify_props: data };
             const response = await this.props.patchUser(payloadUser);
             updatedUser = response.data;
             error = response.error;
         } else {
-            const response = await this.props.updateMe({notify_props: data});
+            const response = await this.props.updateMe({ notify_props: data });
             updatedUser = response.data;
             error = response.error;
         }
 
         if (updatedUser) {
             this.handleUpdateSection('');
-            this.setState(getDefaultStateFromProps(this.props));
+            this.setState((prevState) => ({
+                ...getDefaultStateFromProps(this.props),
+                hideMessagePreview: prevState.hideMessagePreview,
+            }));
         } else if (error) {
-            this.setState({serverError: error.message, isSaving: false});
+            this.setState({ serverError: error.message, isSaving: false });
         } else {
-            this.setState({serverError: '', isSaving: false});
+            this.setState({ serverError: '', isSaving: false });
         }
     };
 
@@ -330,50 +449,50 @@ class NotificationsTab extends React.PureComponent<Props, State> {
         } else {
             this.props.updateSection('');
         }
-        this.setState({isSaving: false});
+        this.setState({ isSaving: false });
         this.handleCancel();
     };
 
     setStateValue = (key: string, value: string | boolean): void => {
-        const data: {[key: string]: string | boolean} = {};
+        const data: { [key: string]: string | boolean } = {};
         data[key] = value;
-        this.setState((prevState) => ({...prevState, ...data}));
+        this.setState((prevState) => ({ ...prevState, ...data }));
     };
 
     handleNotifyCommentsRadio = (notifyCommentsLevel: UserNotifyProps['comments'], e?: React.ChangeEvent): void => {
-        this.setState({notifyCommentsLevel});
+        this.setState({ notifyCommentsLevel });
         a11yFocus(e?.currentTarget as HTMLElement);
     };
 
     handleEmailRadio = (enableEmail: UserNotifyProps['email']): void => {
-        this.setState({enableEmail});
+        this.setState({ enableEmail });
     };
 
     handleChangeForUsernameKeyCheckbox = (event: ChangeEvent<HTMLInputElement>) => {
-        const {target: {checked}} = event;
-        this.setState({usernameKey: checked});
+        const { target: { checked } } = event;
+        this.setState({ usernameKey: checked });
     };
 
     handleChangeForFirstNameKeyCheckbox = (event: ChangeEvent<HTMLInputElement>) => {
-        const {target: {checked}} = event;
-        this.setState({firstNameKey: checked});
+        const { target: { checked } } = event;
+        this.setState({ firstNameKey: checked });
     };
 
     handleChangeForChannelKeyCheckbox = (event: ChangeEvent<HTMLInputElement>) => {
-        const {target: {checked}} = event;
-        this.setState({channelKey: checked});
+        const { target: { checked } } = event;
+        this.setState({ channelKey: checked });
     };
 
     handleChangeForChannelMentionAutoFollowRadio = (value: boolean) => {
-        this.setState({channelMentionAutoFollow: value});
+        this.setState({ channelMentionAutoFollow: value });
     };
 
     handleChangeForCustomKeysWithNotificationCheckbox = (event: ChangeEvent<HTMLInputElement>) => {
-        const {target: {checked}} = event;
-        this.setState({isCustomKeysWithNotificationInputChecked: checked});
+        const { target: { checked } } = event;
+        this.setState({ isCustomKeysWithNotificationInputChecked: checked });
     };
 
-    handleChangeForCustomKeysWithNotificationInput = (values: OnChangeValue<{value: string}, true>) => {
+    handleChangeForCustomKeysWithNotificationInput = (values: OnChangeValue<{ value: string }, true>) => {
         if (values && Array.isArray(values) && values.length > 0) {
             // Check the custom keys input checkbox when atleast a single key is entered
             if (this.state.isCustomKeysWithNotificationInputChecked === false) {
@@ -386,10 +505,10 @@ class NotificationsTab extends React.PureComponent<Props, State> {
                 map((value: MultiInputValue) => {
                     // Remove all spaces from the value
                     const formattedValue = value.value.trim().replace(WHITE_SPACE_REGEX, '');
-                    return {value: formattedValue, label: formattedValue};
+                    return { value: formattedValue, label: formattedValue };
                 }).
                 filter((value) => value.value.length > 0);
-            this.setState({customKeysWithNotification});
+            this.setState({ customKeysWithNotification });
         } else {
             this.setState({
                 isCustomKeysWithNotificationInputChecked: false,
@@ -413,7 +532,7 @@ class NotificationsTab extends React.PureComponent<Props, State> {
         });
 
         if (!this.state.isCustomKeysWithNotificationInputChecked) {
-            this.setState({isCustomKeysWithNotificationInputChecked: true});
+            this.setState({ isCustomKeysWithNotificationInputChecked: true });
         }
     };
 
@@ -430,7 +549,7 @@ class NotificationsTab extends React.PureComponent<Props, State> {
         // Check if input contains comma, if so, add the value to the list of custom keys
         if (!value.includes(Constants.KeyCodes.COMMA[0])) {
             const formattedValue = value.trim().replace(WHITE_SPACE_REGEX, '');
-            this.setState({customKeysWithNotificationInputValue: formattedValue});
+            this.setState({ customKeysWithNotificationInputValue: formattedValue });
         }
     };
 
@@ -441,15 +560,15 @@ class NotificationsTab extends React.PureComponent<Props, State> {
         }
     };
 
-    handleChangeForCustomKeysWithHighlightInput = (values: OnChangeValue<{value: string}, true>) => {
+    handleChangeForCustomKeysWithHighlightInput = (values: OnChangeValue<{ value: string }, true>) => {
         if (values && Array.isArray(values) && values.length > 0) {
             const customKeysWithHighlight = values.
                 map((value: MultiInputValue) => {
                     const formattedValue = value.value.trim();
-                    return {value: formattedValue, label: formattedValue};
+                    return { value: formattedValue, label: formattedValue };
                 }).
                 filter((value) => value.value.length > 0);
-            this.setState({customKeysWithHighlight});
+            this.setState({ customKeysWithHighlight });
         } else {
             this.setState({
                 customKeysWithHighlight: [],
@@ -459,7 +578,7 @@ class NotificationsTab extends React.PureComponent<Props, State> {
 
     handleChangeForCustomKeysWithHighlightInputValue = (value: string) => {
         if (!value.includes(Constants.KeyCodes.COMMA[0])) {
-            this.setState({customKeysWithHighlightInputValue: value});
+            this.setState({ customKeysWithHighlightInputValue: value });
         }
     };
 
@@ -504,7 +623,7 @@ class NotificationsTab extends React.PureComponent<Props, State> {
         if (isSectionExpanded) {
             max = (
                 <SettingItemMax
-                    title={this.props.intl.formatMessage({id: 'user.settings.notifications.channelMentionAutoFollow.title', defaultMessage: 'Auto-follow threads on channel-wide mentions'})}
+                    title={this.props.intl.formatMessage({ id: 'user.settings.notifications.channelMentionAutoFollow.title', defaultMessage: 'Auto-follow threads on channel-wide mentions' })}
                     inputs={
                         <fieldset>
                             <legend className='form-legend hidden-label'>
@@ -527,7 +646,7 @@ class NotificationsTab extends React.PureComponent<Props, State> {
                                         defaultMessage='On'
                                     />
                                 </label>
-                                <br/>
+                                <br />
                             </div>
                             <div className='radio'>
                                 <label>
@@ -576,7 +695,7 @@ class NotificationsTab extends React.PureComponent<Props, State> {
 
         return (
             <SettingItem
-                title={this.props.intl.formatMessage({id: 'user.settings.notifications.channelMentionAutoFollow.title', defaultMessage: 'Auto-follow threads on channel-wide mentions'})}
+                title={this.props.intl.formatMessage({ id: 'user.settings.notifications.channelMentionAutoFollow.title', defaultMessage: 'Auto-follow threads on channel-wide mentions' })}
                 active={isSectionExpanded}
                 describe={describe}
                 section={UserSettingsNotificationSections.CHANNEL_MENTION_AUTO_FOLLOW}
@@ -715,11 +834,11 @@ class NotificationsTab extends React.PureComponent<Props, State> {
 
             expandedSection = (
                 <SettingItemMax
-                    title={this.props.intl.formatMessage({id: 'user.settings.notifications.keywordsWithNotification.title', defaultMessage: 'Keywords that trigger notifications'})}
+                    title={this.props.intl.formatMessage({ id: 'user.settings.notifications.keywordsWithNotification.title', defaultMessage: 'Keywords that trigger notifications' })}
                     inputs={
                         <fieldset>
                             <legend className='hidden-label'>
-                                {this.props.intl.formatMessage({id: 'user.settings.notifications.keywordsWithNotification.title', defaultMessage: 'Keywords that trigger notifications'})}
+                                {this.props.intl.formatMessage({ id: 'user.settings.notifications.keywordsWithNotification.title', defaultMessage: 'Keywords that trigger notifications' })}
                             </legend>
                             <div>
                                 {inputs}
@@ -755,7 +874,7 @@ class NotificationsTab extends React.PureComponent<Props, State> {
 
         return (
             <SettingItem
-                title={this.props.intl.formatMessage({id: 'user.settings.notifications.keywordsWithNotification.title', defaultMessage: 'Keywords that trigger notifications'})}
+                title={this.props.intl.formatMessage({ id: 'user.settings.notifications.keywordsWithNotification.title', defaultMessage: 'Keywords that trigger notifications' })}
                 section={UserSettingsNotificationSections.KEYWORDS_MENTIONS}
                 active={isSectionExpanded}
                 areAllSectionsInactive={this.props.activeSection === ''}
@@ -813,7 +932,7 @@ class NotificationsTab extends React.PureComponent<Props, State> {
 
             expandedSection = (
                 <SettingItemMax
-                    title={this.props.intl.formatMessage({id: 'user.settings.notifications.keywordsWithHighlight.title', defaultMessage: 'Keywords that get highlighted (without notifications)'})}
+                    title={this.props.intl.formatMessage({ id: 'user.settings.notifications.keywordsWithHighlight.title', defaultMessage: 'Keywords that get highlighted (without notifications)' })}
                     inputs={inputs}
                     submit={this.handleSubmit}
                     saving={this.state.isSaving}
@@ -824,7 +943,7 @@ class NotificationsTab extends React.PureComponent<Props, State> {
             );
         }
 
-        let collapsedDescription = this.props.intl.formatMessage({id: 'user.settings.notifications.keywordsWithHighlight.none', defaultMessage: 'None'});
+        let collapsedDescription = this.props.intl.formatMessage({ id: 'user.settings.notifications.keywordsWithHighlight.none', defaultMessage: 'None' });
         if (!this.props.isEnterpriseOrCloudOrSKUStarterFree && this.props.isEnterpriseReady && this.state.customKeysWithHighlight.length > 0) {
             const customKeysWithHighlightStringArray = this.state.customKeysWithHighlight.map((key) => key.value);
             collapsedDescription = customKeysWithHighlightStringArray.map((key) => `"${key}"`).join(', ');
@@ -842,7 +961,7 @@ class NotificationsTab extends React.PureComponent<Props, State> {
                 tooltipMessageBlocked={this.props.intl.formatMessage({
                     id: 'user.settings.notifications.keywordsWithHighlight.disabledTooltipMessage',
                     defaultMessage:
-                    'This feature is available on the Professional plan',
+                        'This feature is available on the Professional plan',
                 })}
                 titleAdminPreTrial={this.props.intl.formatMessage({
                     id: 'user.settings.notifications.keywordsWithHighlight.userModal.titleAdminPreTrial',
@@ -871,7 +990,7 @@ class NotificationsTab extends React.PureComponent<Props, State> {
                         defaultMessage: 'Get the ability to passively highlight keywords that you care about.{br}{br}Request your admin to upgrade to Mattermost Professional to access this feature.',
                     },
                     {
-                        br: <br/>,
+                        br: <br />,
                     },
                 )}
                 ctaExtraContent={
@@ -886,7 +1005,7 @@ class NotificationsTab extends React.PureComponent<Props, State> {
 
         return (
             <SettingItem
-                title={this.props.intl.formatMessage({id: 'user.settings.notifications.keywordsWithHighlight.title', defaultMessage: 'Keywords that get highlighted (without notifications)'})}
+                title={this.props.intl.formatMessage({ id: 'user.settings.notifications.keywordsWithHighlight.title', defaultMessage: 'Keywords that get highlighted (without notifications)' })}
                 section={UserSettingsNotificationSections.KEYWORDS_HIGHLIGHT}
                 active={isSectionExpanded}
                 areAllSectionsInactive={this.props.activeSection === ''}
@@ -936,7 +1055,7 @@ class NotificationsTab extends React.PureComponent<Props, State> {
                                 defaultMessage='Trigger notifications on messages in reply threads that I start or participate in'
                             />
                         </label>
-                        <br/>
+                        <br />
                     </div>
                     <div className='radio'>
                         <label>
@@ -952,7 +1071,7 @@ class NotificationsTab extends React.PureComponent<Props, State> {
                                 defaultMessage='Trigger notifications on messages in threads that I start'
                             />
                         </label>
-                        <br/>
+                        <br />
                     </div>
                     <div className='radio'>
                         <label>
@@ -983,7 +1102,7 @@ class NotificationsTab extends React.PureComponent<Props, State> {
 
             max = (
                 <SettingItemMax
-                    title={this.props.intl.formatMessage({id: 'user.settings.notifications.comments', defaultMessage: 'Reply notifications'})}
+                    title={this.props.intl.formatMessage({ id: 'user.settings.notifications.comments', defaultMessage: 'Reply notifications' })}
                     extraInfo={extraInfo}
                     inputs={inputs}
                     submit={this.handleSubmit}
@@ -1020,7 +1139,7 @@ class NotificationsTab extends React.PureComponent<Props, State> {
 
         return (
             <SettingItem
-                title={this.props.intl.formatMessage({id: 'user.settings.notifications.comments', defaultMessage: 'Reply notifications'})}
+                title={this.props.intl.formatMessage({ id: 'user.settings.notifications.comments', defaultMessage: 'Reply notifications' })}
                 active={this.props.activeSection === UserSettingsNotificationSections.REPLY_NOTIFCATIONS}
                 describe={describe}
                 section={UserSettingsNotificationSections.REPLY_NOTIFCATIONS}
@@ -1068,7 +1187,7 @@ class NotificationsTab extends React.PureComponent<Props, State> {
                             error={this.state.serverError}
                             saving={this.state.isSaving}
                         />
-                        <div className='divider-dark'/>
+                        <div className='divider-dark' />
                     </div>
                 )}
             />
@@ -1077,6 +1196,7 @@ class NotificationsTab extends React.PureComponent<Props, State> {
 
     render() {
         const channelMentionAutoFollowSection = this.createChannelMentionAutoFollowSection();
+        const hideMessagePreviewSection = this.createHideMessagePreviewSection();
         const keywordsWithNotificationSection = this.createKeywordsWithNotificationSection();
         const keywordsWithHighlightSection = this.createKeywordsWithHighlightSection();
         const commentsSection = this.createCommentsSection();
@@ -1122,7 +1242,7 @@ class NotificationsTab extends React.PureComponent<Props, State> {
                                             href='https://mattermost.com/pl/about-notifications'
                                             className='btn btn-link'
                                         >
-                                            <LightbulbOutlineIcon className='circular-border'/>
+                                            <LightbulbOutlineIcon className='circular-border' />
                                             <span>{chunks}</span>
                                         </ExternalLink>
                                     )),
@@ -1130,7 +1250,7 @@ class NotificationsTab extends React.PureComponent<Props, State> {
                             />
                         }
                     />
-                    <div className='divider-dark first'/>
+                    <div className='divider-dark first' />
                     <DesktopAndMobileNotificationSettings
                         active={this.props.activeSection === UserSettingsNotificationSections.DESKTOP_AND_MOBILE}
                         updateSection={this.handleUpdateSection}
@@ -1149,7 +1269,9 @@ class NotificationsTab extends React.PureComponent<Props, State> {
                         pushThreads={this.state.pushThreads}
                         desktopAndMobileSettingsDifferent={this.state.desktopAndMobileSettingsDifferent}
                     />
-                    <div className='divider-light'/>
+                    <div className='divider-light' />
+                    {hideMessagePreviewSection}
+                    <div className='divider-light' />
                     <DesktopNotificationSoundsSettings
                         active={this.props.activeSection === UserSettingsNotificationSections.DESKTOP_NOTIFICATION_SOUND}
                         updateSection={this.handleUpdateSection}
@@ -1165,7 +1287,7 @@ class NotificationsTab extends React.PureComponent<Props, State> {
                         callsDesktopSound={this.state.callsDesktopSound}
                         callsNotificationSound={this.state.callsNotificationSound}
                     />
-                    <div className='divider-light'/>
+                    <div className='divider-light' />
                     <EmailNotificationSetting
                         active={this.props.activeSection === UserSettingsNotificationSections.EMAIL}
                         updateSection={this.handleUpdateSection}
@@ -1180,26 +1302,26 @@ class NotificationsTab extends React.PureComponent<Props, State> {
                         onChange={this.handleEmailRadio}
                         threads={this.state.emailThreads || ''}
                     />
-                    <div className='divider-light'/>
+                    <div className='divider-light' />
                     {channelMentionAutoFollowSection}
-                    <div className='divider-light'/>
+                    <div className='divider-light' />
                     {keywordsWithNotificationSection}
                     {(!this.props.isEnterpriseOrCloudOrSKUStarterFree && this.props.isEnterpriseReady) && (
                         <>
-                            <div className='divider-light'/>
+                            <div className='divider-light' />
                             {keywordsWithHighlightSection}
                         </>
                     )}
-                    <div className='divider-light'/>
+                    <div className='divider-light' />
                     {!this.props.isCollapsedThreadsEnabled && (
                         <>
-                            <div className='divider-light'/>
+                            <div className='divider-light' />
                             {commentsSection}
                         </>
                     )}
                     {this.props.enableAutoResponder && (
                         <>
-                            <div className='divider-light'/>
+                            <div className='divider-light' />
                             {autoResponderSection}
                         </>
                     )}
@@ -1207,11 +1329,11 @@ class NotificationsTab extends React.PureComponent<Props, State> {
                     {/*  We placed the disabled items in the last */}
                     {(this.props.isEnterpriseOrCloudOrSKUStarterFree && this.props.isEnterpriseReady) && (
                         <>
-                            <div className='divider-light'/>
+                            <div className='divider-light' />
                             {keywordsWithHighlightSection}
                         </>
                     )}
-                    <SendTestNotificationNotice adminMode={this.props.adminMode}/>
+                    <SendTestNotificationNotice adminMode={this.props.adminMode} />
                 </div>
             </div>
 

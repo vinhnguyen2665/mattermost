@@ -15,7 +15,7 @@ on:
         required: true
         type: string
       build-server-tag:
-        description: "Build image tag (e.g. go1.26.3-node24.11.1)"
+        description: "Build image tag (e.g. go1.26.3-node24.13.0)"
         required: true
         type: string
       fips-enabled:

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Prints the tag identifying the mattermost-build-server image, e.g.
-# "go1.26.7-node24.11.1". The image bakes in both toolchains, so the tag names
+# "go1.26.7-node24.13.0". The image bakes in both toolchains, so the tag names
 # both. CI resolves this once and propagates it as BUILD_SERVER_TAG.
 #
 # The tag comes from the Dockerfiles, since those are what actually determine

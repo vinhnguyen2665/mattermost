@@ -5,7 +5,7 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 # Keep in sync with server/.go-version. cloud-agent-install.sh reinstalls if they drift.
 ARG GO_VERSION=1.26.7
 # Image pin on the .nvmrc line (currently 24.11). cloud-agent-install.sh uses .nvmrc at bootstrap.
-ARG NODE_VERSION=24.11.1
+ARG NODE_VERSION=24.13.0
 ARG NVM_VERSION=0.40.3
 ARG DOCKER_VERSION=5:28.5.2-1~ubuntu.24.04~noble
 ARG CONTAINERD_VERSION=2.2.3-1~ubuntu.24.04~noble
@@ -113,9 +113,9 @@ RUN install -m 0755 -d /etc/apt/keyrings && \
     rm -rf /var/lib/apt/lists/*
 
 RUN case "$(dpkg --print-architecture)" in \
-      amd64) go_arch=amd64 ;; \
-      arm64) go_arch=arm64 ;; \
-      *) echo "Unsupported Go architecture: $(dpkg --print-architecture)" >&2; exit 1 ;; \
+    amd64) go_arch=amd64 ;; \
+    arm64) go_arch=arm64 ;; \
+    *) echo "Unsupported Go architecture: $(dpkg --print-architecture)" >&2; exit 1 ;; \
     esac && \
     curl --retry 3 --retry-delay 5 -fsSL "https://go.dev/dl/go${GO_VERSION}.linux-${go_arch}.tar.gz" -o /tmp/go.tgz && \
     rm -rf /usr/local/go && \
@@ -125,9 +125,9 @@ RUN case "$(dpkg --print-architecture)" in \
     rm -f /tmp/go.tgz
 
 RUN case "$(dpkg --print-architecture)" in \
-      amd64) aws_arch=x86_64 ;; \
-      arm64) aws_arch=aarch64 ;; \
-      *) echo "Unsupported AWS CLI architecture: $(dpkg --print-architecture)" >&2; exit 1 ;; \
+    amd64) aws_arch=x86_64 ;; \
+    arm64) aws_arch=aarch64 ;; \
+    *) echo "Unsupported AWS CLI architecture: $(dpkg --print-architecture)" >&2; exit 1 ;; \
     esac && \
     curl --retry 3 --retry-delay 5 -fsSL "https://awscli.amazonaws.com/awscli-exe-linux-${aws_arch}.zip" -o /tmp/awscliv2.zip && \
     unzip -q /tmp/awscliv2.zip -d /tmp && \
@@ -152,10 +152,10 @@ RUN git clone --depth 1 --branch "v${NVM_VERSION}" https://github.com/nvm-sh/nvm
     ln -sfn "${NVM_DIR}/versions/node/v${NODE_VERSION}/bin/npx" /usr/local/bin/npx
 
 RUN { \
-      echo 'export NVM_DIR="$HOME/.nvm"'; \
-      echo '[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"'; \
-      echo 'export GOPATH="$HOME/go"'; \
-      echo 'export PATH="$NVM_DIR/versions/node/v24.11.1/bin:/usr/local/go/bin:$GOPATH/bin:$PATH"'; \
+    echo 'export NVM_DIR="$HOME/.nvm"'; \
+    echo '[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"'; \
+    echo 'export GOPATH="$HOME/go"'; \
+    echo 'export PATH="$NVM_DIR/versions/node/v24.13.0/bin:/usr/local/go/bin:$GOPATH/bin:$PATH"'; \
     } >> /home/ubuntu/.bashrc && \
     chown ubuntu:ubuntu /home/ubuntu/.bashrc
 

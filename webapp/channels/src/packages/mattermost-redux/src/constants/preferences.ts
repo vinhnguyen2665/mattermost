@@ -12,6 +12,8 @@ const Preferences = {
     CATEGORY_FLAGGED_POST: 'flagged_post',
     CATEGORY_AUTO_RESET_MANUAL_STATUS: 'auto_reset_manual_status',
     CATEGORY_NOTIFICATIONS: 'notifications',
+    HIDE_MESSAGE_PREVIEW: 'hide_message_preview',
+    HIDE_MESSAGE_PREVIEW_DEFAULT: 'true',
     COLLAPSED_REPLY_THREADS: 'collapsed_reply_threads',
     WYSIWYG_EDITOR: 'wysiwyg_editor',
     WYSIWYG_EDITOR_DEFAULT: 'false',
