@@ -2,7 +2,7 @@
 # Node from .nvmrc -- so this exists to give a working tree the same Node that
 # CI, the buildenv images and webapp/package.json "engines" all agree on.
 #
-# npm is deliberately absent: it ships with Node, and 24.11.1 carries exactly
+# npm is deliberately absent: it ships with Node, and 24.13.0 carries exactly
 # the npm 11.6.2 that "engines" requires. Pinning Node exactly is therefore what
 # pins npm exactly, and it is the same npm every CI job gets. Naming npm here
 # too would add a second version to hold in step, with nothing enforcing the
@@ -12,4 +12,4 @@
 # "engines"/"packageManager" and webapp/package-lock.json. buildenv-tag.sh fails
 # when this and .nvmrc disagree.
 [tools]
-node = "24.11.1"
+node = "24.13.0"

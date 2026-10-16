@@ -119,6 +119,8 @@ export const Preferences = {
     UNREAD_SCROLL_POSITION_START_FROM_NEWEST: 'start_from_newest',
     CATEGORY_THEME: 'theme',
     CATEGORY_NOTIFICATIONS: 'notifications',
+    HIDE_MESSAGE_PREVIEW: 'hide_message_preview',
+    HIDE_MESSAGE_PREVIEW_DEFAULT: 'true',
     EMAIL_INTERVAL: 'email_interval',
     INTERVAL_IMMEDIATE: 30, // "immediate" is a 30 second interval
     INTERVAL_FIFTEEN_MINUTES: 15 * 60,
@@ -994,6 +996,7 @@ export const ChannelAutoFollowThreads = {
 
 export const UserSettingsNotificationSections = {
     DESKTOP_AND_MOBILE: 'desktopAndMobile',
+    HIDE_MESSAGE_PREVIEW: 'hideMessagePreview',
     DESKTOP_NOTIFICATION_SOUND: 'desktopNotificationSound',
     EMAIL: 'email',
     CHANNEL_MENTION_AUTO_FOLLOW: 'channelMentionAutoFollow',

@@ -7,6 +7,7 @@ import type {PreferenceType} from '@mattermost/types/preferences';
 import type {UserNotifyProps, UserProfile} from '@mattermost/types/users';
 import type {DeepPartial} from '@mattermost/types/utilities';
 
+import {Preferences} from 'mattermost-redux/constants';
 import {MarkUnread} from 'mattermost-redux/constants/channels';
 
 import testConfigureStore from 'tests/test_store';
@@ -182,6 +183,12 @@ describe('notification_actions', () => {
                     preferences: {
                         myPreferences: {
                             'display_settings--collapsed_reply_threads': crt,
+                            'notifications--hide_message_preview': {
+                                category: Preferences.CATEGORY_NOTIFICATIONS,
+                                name: 'hide_message_preview',
+                                user_id: 'current_user_id',
+                                value: 'false',
+                            },
                         },
                     },
                     groups: {
@@ -230,6 +237,56 @@ describe('notification_actions', () => {
                 expect(getHistory().push).toHaveBeenCalledWith('/team/channels/utopia');
                 expect(window.focus).toHaveBeenCalled();
                 window.focus = focus;
+            });
+        });
+
+        test('should hide message body when hide_message_preview is true (default when unset)', async () => {
+            const stateWithDefault = {
+                ...baseState,
+                entities: {
+                    ...baseState.entities,
+                    preferences: {
+                        myPreferences: {
+                            'display_settings--collapsed_reply_threads': crt,
+                        },
+                    },
+                },
+            };
+            const store = testConfigureStore(stateWithDefault);
+
+            return store.dispatch(sendDesktopNotification(post, msgProps)).then(() => {
+                expect(spy).toHaveBeenCalledWith(expect.objectContaining({
+                    body: '',
+                    title: 'Utopia',
+                }));
+            });
+        });
+
+        test('should hide message body when hide_message_preview is set to true', async () => {
+            const stateWithExplicitTrue = {
+                ...baseState,
+                entities: {
+                    ...baseState.entities,
+                    preferences: {
+                        myPreferences: {
+                            'display_settings--collapsed_reply_threads': crt,
+                            'notifications--hide_message_preview': {
+                                category: Preferences.CATEGORY_NOTIFICATIONS,
+                                name: 'hide_message_preview',
+                                user_id: 'current_user_id',
+                                value: 'true',
+                            },
+                        },
+                    },
+                },
+            };
+            const store = testConfigureStore(stateWithExplicitTrue);
+
+            return store.dispatch(sendDesktopNotification(post, msgProps)).then(() => {
+                expect(spy).toHaveBeenCalledWith(expect.objectContaining({
+                    body: '',
+                    title: 'Utopia',
+                }));
             });
         });
 

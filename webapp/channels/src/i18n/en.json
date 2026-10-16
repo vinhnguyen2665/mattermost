@@ -32871,6 +32871,22 @@
     "defaultMessage": "Desktop and mobile notifications",
     "description": "Title of the 'Desktop and mobile notifications' section in Settings > Notifications."
   },
+  "user.settings.notifications.hideMessagePreview.title": {
+    "defaultMessage": "Hide preview message",
+    "description": "Title of the hide message preview notification setting."
+  },
+  "user.settings.notifications.hideMessagePreview.description": {
+    "defaultMessage": "When enabled, notifications on your computer will only display the sender or channel, not the message details.",
+    "description": "Description of the hide message preview notification setting."
+  },
+  "user.settings.notifications.hideMessagePreview.on": {
+    "defaultMessage": "On",
+    "description": "Label for On option in hide message preview setting"
+  },
+  "user.settings.notifications.hideMessagePreview.off": {
+    "defaultMessage": "Off",
+    "description": "Label for Off option in hide message preview setting"
+  },
   "user.settings.notifications.desktopNotificationSound.hasDesktopAndCallsSound": {
     "defaultMessage": "\"{desktopSound}\" for messages, \"{callsSound}\" for calls",
     "description": "Collapsed summary of the notification sounds setting; {desktopSound} and {callsSound} are the selected sound names (e.g. 'Bing', 'Calm')."

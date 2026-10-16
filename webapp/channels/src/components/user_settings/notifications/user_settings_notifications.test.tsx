@@ -2,20 +2,20 @@
 // See LICENSE.txt for license information.
 
 import React from 'react';
-import {type IntlShape} from 'react-intl';
+import { type IntlShape } from 'react-intl';
 
-import {renderWithContext, screen} from 'tests/react_testing_utils';
-import {NotificationLevels} from 'utils/constants';
-import {TestHelper} from 'utils/test_helper';
+import { renderWithContext, screen, fireEvent } from 'tests/react_testing_utils';
+import { NotificationLevels, UserSettingsNotificationSections } from 'utils/constants';
+import { TestHelper } from 'utils/test_helper';
 
-import UserSettingsNotifications, {areDesktopAndMobileSettingsDifferent} from './user_settings_notifications';
+import UserSettingsNotifications, { areDesktopAndMobileSettingsDifferent } from './user_settings_notifications';
 
-jest.mock('components/user_settings/notifications/desktop_and_mobile_notification_setting/notification_permission_section_notice', () => () => <div/>);
-jest.mock('components/user_settings/notifications/desktop_and_mobile_notification_setting/notification_permission_title_tag', () => () => <div/>);
+jest.mock('components/user_settings/notifications/desktop_and_mobile_notification_setting/notification_permission_section_notice', () => () => <div />);
+jest.mock('components/user_settings/notifications/desktop_and_mobile_notification_setting/notification_permission_title_tag', () => () => <div />);
 
 describe('components/user_settings/display/UserSettingsDisplay', () => {
     const defaultProps = {
-        user: TestHelper.getUserMock({id: 'user_id'}),
+        user: TestHelper.getUserMock({ id: 'user_id' }),
         updateSection: jest.fn(),
         activeSection: '',
         closeModal: jest.fn(),
@@ -33,38 +33,75 @@ describe('components/user_settings/display/UserSettingsDisplay', () => {
 
     test('should match snapshot', () => {
         const wrapper = renderWithContext(
-            <UserSettingsNotifications {...defaultProps}/>,
+            <UserSettingsNotifications {...defaultProps} />,
         );
 
         expect(wrapper).toMatchSnapshot();
     });
 
     test('should match snapshot when its a starter free', () => {
-        const props = {...defaultProps, isEnterpriseOrCloudOrSKUStarterFree: true};
+        const props = { ...defaultProps, isEnterpriseOrCloudOrSKUStarterFree: true };
 
         const wrapper = renderWithContext(
-            <UserSettingsNotifications {...props}/>,
+            <UserSettingsNotifications {...props} />,
         );
 
         expect(wrapper).toMatchSnapshot();
     });
 
     test('should match snapshot when its team edition', () => {
-        const props = {...defaultProps, isEnterpriseReady: false};
+        const props = { ...defaultProps, isEnterpriseReady: false };
 
         const wrapper = renderWithContext(
-            <UserSettingsNotifications {...props}/>,
+            <UserSettingsNotifications {...props} />,
         );
 
         expect(wrapper).toMatchSnapshot();
     });
 
     test('should show reply notifications section when CRT off', () => {
-        const props = {...defaultProps, isCollapsedThreadsEnabled: false};
+        const props = { ...defaultProps, isCollapsedThreadsEnabled: false };
 
-        renderWithContext(<UserSettingsNotifications {...props}/>);
+        renderWithContext(<UserSettingsNotifications {...props} />);
 
         expect(screen.getByText('Reply notifications')).toBeInTheDocument();
+    });
+
+    test('should show hide message preview section with Edit and change value', () => {
+        const updateSection = jest.fn();
+        const savePreferences = jest.fn();
+        const props = {
+            ...defaultProps,
+            hideMessagePreview: true,
+            updateSection,
+            savePreferences,
+        };
+
+        const { rerender } = renderWithContext(<UserSettingsNotifications {...props} />);
+
+        expect(screen.getByText('Hide preview message')).toBeInTheDocument();
+        const editButton = screen.getByRole('button', { name: 'Hide preview message Edit' });
+        expect(editButton).toBeInTheDocument();
+
+        fireEvent.click(editButton);
+        expect(updateSection).toHaveBeenCalledWith(UserSettingsNotificationSections.HIDE_MESSAGE_PREVIEW);
+
+        // When expanded
+        rerender(<UserSettingsNotifications {...props} activeSection={UserSettingsNotificationSections.HIDE_MESSAGE_PREVIEW} />);
+
+        const radioOff = screen.getByLabelText('Off');
+        expect(radioOff).toBeInTheDocument();
+        fireEvent.click(radioOff);
+
+        const saveBtn = screen.getByRole('button', { name: 'Save' });
+        fireEvent.click(saveBtn);
+
+        expect(savePreferences).toHaveBeenCalledWith('user_id', [{
+            user_id: 'user_id',
+            category: 'notifications',
+            name: 'hide_message_preview',
+            value: 'false',
+        }]);
     });
 });
 
